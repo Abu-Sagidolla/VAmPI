@@ -31,6 +31,8 @@ def me():
         return Response(error_message_helper(resp), 401, mimetype="application/json")
     else:
         user = User.query.filter_by(username=resp['sub']).first()
+        if not user:
+            return Response(error_message_helper("User not found"), 404, mimetype="application/json")
         responseObject = {
             'status': 'success',
             'data': {
@@ -140,6 +142,8 @@ def update_email(username):
         return Response(error_message_helper(resp), 401, mimetype="application/json")
     else:
         user = User.query.filter_by(username=resp['sub']).first()
+        if not user or user.username != resp['sub']:
+            return Response(error_message_helper("Unauthorized"), 403, mimetype="application/json")
         if vuln:  # Regex DoS
             match = re.search(
                 r"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@{1}([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$",
@@ -159,7 +163,7 @@ def update_email(username):
                 return Response(error_message_helper("Please Provide a valid email address."), 400,
                                 mimetype="application/json")
         else:
-            regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
+            regex = '^[a-z0-9]+[\\_]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
             if (re.search(regex, request_data.get('email'))):
                 user.email = request_data.get('email')
                 db.session.commit()
@@ -192,6 +196,8 @@ def update_password(username):
                     return Response(error_message_helper("User Not Found"), 400, mimetype="application/json")
             else:
                 user = User.query.filter_by(username=resp['sub']).first()
+                if not user or user.username != resp['sub']:
+                    return Response(error_message_helper("Unauthorized"), 403, mimetype="application/json")
                 user.password = request_data.get('password')
                 db.session.commit()
             responseObject = {
